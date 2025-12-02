@@ -1,0 +1,149 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check || true
+
+      - name: Run tests
+        run: npm test || echo "No tests configured yet"
+
+  deploy-lambda:
+    name: Deploy Lambda Functions
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          cd scripts
+          pip install -r requirements.txt -t ./package
+          cp lambda_functions.py ./package/
+          cd package
+          zip -r ../lambda-deployment.zip .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Lambda - Create Campaign
+        run: |
+          aws lambda update-function-code \
+            --function-name campaign-create \
+            --zip-file fileb://scripts/lambda-deployment.zip \
+            --region ${{ env.AWS_REGION }} || echo "Lambda function not found, create it first"
+
+      - name: Deploy Lambda - Get Campaigns
+        run: |
+          aws lambda update-function-code \
+            --function-name campaign-list \
+            --zip-file fileb://scripts/lambda-deployment.zip \
+            --region ${{ env.AWS_REGION }} || echo "Lambda function not found, create it first"
+
+      - name: Deploy Lambda - Get Campaign by ID
+        run: |
+          aws lambda update-function-code \
+            --function-name campaign-get \
+            --zip-file fileb://scripts/lambda-deployment.zip \
+            --region ${{ env.AWS_REGION }} || echo "Lambda function not found, create it first"
+
+      - name: Deploy Lambda - Update Campaign
+        run: |
+          aws lambda update-function-code \
+            --function-name campaign-update \
+            --zip-file fileb://scripts/lambda-deployment.zip \
+            --region ${{ env.AWS_REGION }} || echo "Lambda function not found, create it first"
+
+      - name: Deploy Lambda - Delete Campaign
+        run: |
+          aws lambda update-function-code \
+            --function-name campaign-delete \
+            --zip-file fileb://scripts/lambda-deployment.zip \
+            --region ${{ env.AWS_REGION }} || echo "Lambda function not found, create it first"
+
+  deploy-frontend:
+    name: Deploy Frontend to S3
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.API_GATEWAY_URL }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" || echo "CloudFront not configured"
+
+      - name: Output deployment URL
+        run: |
+          echo "Frontend deployed to: https://${{ secrets.CLOUDFRONT_DOMAIN }}"

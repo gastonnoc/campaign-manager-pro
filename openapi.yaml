@@ -1,0 +1,538 @@
+openapi: 3.0.3
+info:
+  title: Campaign Manager Pro API
+  description: |
+    RESTful API for managing advertising campaigns. This API allows commercial teams to create, 
+    read, update, and delete campaigns with automatic gross margin calculations.
+    
+    ## Gross Margin Formula
+    `Gross Margin (GM) = Investment - Cost - Hidden Cost`
+    
+    ## Authentication
+    Currently this API does not require authentication. In production, implement API Key or JWT authentication.
+    
+  version: 1.0.0
+  contact:
+    name: US Media
+    email: api@usmedia.com
+
+servers:
+  - url: https://api.example.com/prod
+    description: Production server
+  - url: https://api.example.com/dev
+    description: Development server
+  - url: http://localhost:3000/api
+    description: Local development
+
+tags:
+  - name: campaigns
+    description: Campaign management operations
+  - name: uploads
+    description: File upload operations (optional)
+
+paths:
+  /campaigns:
+    get:
+      tags:
+        - campaigns
+      summary: List all campaigns
+      description: Retrieves a list of all advertising campaigns
+      operationId: listCampaigns
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Campaign'
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440000"
+                  name: "Nintendo_supermario_Wetransfer_Jan_Brazil"
+                  customer: "Africa - Brazil - Omnicom"
+                  brandAdvertiser: "Nintendo"
+                  campaignMotto: "SuperMario"
+                  organizationPublisher: "Wetransfer"
+                  market: "Brazil"
+                  salesPerson: "Carla Rodriguez"
+                  month: "Jan"
+                  investment: 10236.82
+                  cost: 4677.40
+                  hiddenCost: -1536.86
+                  margin: 39.3
+                  createdAt: "2024-01-15T10:30:00Z"
+                  updatedAt: "2024-01-15T10:30:00Z"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - campaigns
+      summary: Create a new campaign
+      description: Creates a new advertising campaign with automatic margin calculation
+      operationId: createCampaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignInput'
+            example:
+              name: "Nintendo_supermario_Wetransfer_Jan_Brazil"
+              customer: "Africa - Brazil - Omnicom"
+              brandAdvertiser: "Nintendo"
+              campaignMotto: "SuperMario"
+              organizationPublisher: "Wetransfer"
+              market: "Brazil"
+              salesPerson: "Carla Rodriguez"
+              month: "Jan"
+              investment: 10236.82
+              cost: 4677.40
+              hiddenCost: -1536.86
+              lines: []
+      responses:
+        '201':
+          description: Campaign created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Campaign name is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /campaigns/{id}:
+    get:
+      tags:
+        - campaigns
+      summary: Get campaign by ID
+      description: Retrieves detailed information about a specific campaign
+      operationId: getCampaignById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Campaign unique identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Campaign not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - campaigns
+      summary: Update campaign
+      description: Updates an existing campaign. Margin is recalculated automatically.
+      operationId: updateCampaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Campaign unique identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignInput'
+      responses:
+        '200':
+          description: Campaign updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - campaigns
+      summary: Delete campaign
+      description: Permanently deletes a campaign
+      operationId: deleteCampaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Campaign unique identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Campaign deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Campaign deleted successfully"
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /uploads:
+    post:
+      tags:
+        - uploads
+      summary: Upload campaign asset
+      description: Upload files (logos, PDFs, images) to S3 for campaign assets
+      operationId: uploadAsset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload
+                campaignId:
+                  type: string
+                  format: uuid
+                  description: Associated campaign ID
+                fileType:
+                  type: string
+                  enum: [logo, pdf, image, other]
+                  description: Type of asset
+      responses:
+        '201':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: "https://campaign-assets.s3.amazonaws.com/logos/nintendo-logo.png"
+                  key:
+                    type: string
+                    example: "logos/nintendo-logo.png"
+                  size:
+                    type: integer
+                    example: 52480
+                  contentType:
+                    type: string
+                    example: "image/png"
+        '400':
+          description: Invalid file or parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Upload failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Campaign:
+      type: object
+      required:
+        - id
+        - name
+        - customer
+        - brandAdvertiser
+        - investment
+        - cost
+        - hiddenCost
+        - margin
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the campaign
+        name:
+          type: string
+          description: Campaign name (e.g., BrandName_Product_Publisher_Month_Country)
+          example: "Nintendo_supermario_Wetransfer_Jan_Brazil"
+        customer:
+          type: string
+          description: Customer name and location
+          example: "Africa - Brazil - Omnicom"
+        brandAdvertiser:
+          type: string
+          description: Brand or advertiser name
+          example: "Nintendo"
+        campaignMotto:
+          type: string
+          description: Campaign motto or tagline
+          example: "SuperMario"
+        organizationPublisher:
+          type: string
+          description: Publishing organization
+          example: "Wetransfer"
+        market:
+          type: string
+          description: Target market
+          example: "Brazil"
+        salesPerson:
+          type: string
+          description: Sales representative name
+          example: "Carla Rodriguez"
+        month:
+          type: string
+          enum: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+          description: Campaign month
+        investment:
+          type: number
+          format: float
+          description: Total investment amount (what the client pays)
+          example: 10236.82
+        cost:
+          type: number
+          format: float
+          description: Cost paid to publisher
+          example: 4677.40
+        hiddenCost:
+          type: number
+          format: float
+          description: Hidden costs (e.g., agency commissions). Can be negative.
+          example: -1536.86
+        margin:
+          type: number
+          format: float
+          description: Gross Margin percentage. Calculated as ((investment - cost - hiddenCost) / investment) * 100
+          example: 39.3
+          readOnly: true
+        lines:
+          type: array
+          description: Individual campaign units/lines
+          items:
+            $ref: '#/components/schemas/CampaignLine'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          readOnly: true
+
+    CampaignInput:
+      type: object
+      required:
+        - name
+        - customer
+        - brandAdvertiser
+        - investment
+        - cost
+        - hiddenCost
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        customer:
+          type: string
+          minLength: 1
+          maxLength: 200
+        brandAdvertiser:
+          type: string
+          minLength: 1
+          maxLength: 100
+        campaignMotto:
+          type: string
+          maxLength: 200
+        organizationPublisher:
+          type: string
+          maxLength: 100
+        market:
+          type: string
+          maxLength: 100
+        salesPerson:
+          type: string
+          maxLength: 100
+        month:
+          type: string
+          enum: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+        investment:
+          type: number
+          format: float
+          minimum: 0
+        cost:
+          type: number
+          format: float
+        hiddenCost:
+          type: number
+          format: float
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignLineInput'
+
+    CampaignLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        publisher:
+          type: string
+          example: "We Transfer"
+        market:
+          type: string
+          example: "Brazil"
+        format:
+          type: string
+          example: "Video"
+        units:
+          type: integer
+          example: 68820
+        margin:
+          type: number
+          format: float
+          example: 39.30
+        unitCost:
+          type: number
+          format: float
+          example: 0.15
+        investment:
+          type: number
+          format: float
+          example: 10236.82
+        usmcRate:
+          type: number
+          format: float
+          example: 50.7
+        clientNetRate:
+          type: number
+          format: float
+          example: 0.11
+
+    CampaignLineInput:
+      type: object
+      properties:
+        publisher:
+          type: string
+        market:
+          type: string
+        format:
+          type: string
+        units:
+          type: integer
+          minimum: 0
+        margin:
+          type: number
+          format: float
+        unitCost:
+          type: number
+          format: float
+          minimum: 0
+        investment:
+          type: number
+          format: float
+          minimum: 0
+        usmcRate:
+          type: number
+          format: float
+        clientNetRate:
+          type: number
+          format: float
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Campaign not found"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API Key authentication (to be implemented in production)
+
+# Security can be applied globally or per operation
+# security:
+#   - ApiKeyAuth: []
