@@ -1,383 +1,209 @@
-# Campaign Manager Pro - AWS Deployment Guide
+# Campaign Manager Pro - Deployment Guide
 
-Complete guide for deploying the Campaign Manager Pro application to AWS.
+Simple deployment guide for getting your Campaign Manager Pro application online.
 
-## Prerequisites
+## Quick Deploy to Vercel (Recommended)
 
-- AWS Account with appropriate permissions
-- AWS CLI installed and configured
-- Node.js 18+ and npm installed
-- Python 3.11+ installed
-- Git installed
+### Option 1: Deploy from v0
 
-## Architecture Overview
+1. Click the "Publish" button in v0
+2. Connect your GitHub account
+3. Select "Deploy to Vercel"
+4. Your app will be live in 2-3 minutes at `your-app.vercel.app`
 
-\`\`\`
-┌─────────────────┐
-│   CloudFront    │ ← Frontend Distribution
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│   S3 Bucket     │ ← Static Frontend (Next.js build)
-└─────────────────┘
+### Option 2: Deploy from GitHub
 
-┌─────────────────┐
-│  API Gateway    │ ← RESTful API Endpoints
-└────────┬────────┘
-         │
-    ┌────┴─────┬─────────┬─────────┬─────────┐
-    │          │         │         │         │
-┌───▼───┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐
-│Create │  │List │  │Get  │  │Update│  │Delete│
-│Lambda │  │Lambda│  │Lambda│  │Lambda│  │Lambda│
-└───┬───┘  └──┬──┘  └──┬──┘  └──┬──┘  └──┬──┘
-    │         │        │        │        │
-    └─────────┴────────┴────────┴────────┘
-                       │
-              ┌────────▼────────┐
-              │   DynamoDB      │ ← Campaign Data Storage
-              └─────────────────┘
-
-              ┌─────────────────┐
-              │   S3 Bucket     │ ← Campaign Assets (logos, PDFs)
-              └─────────────────┘
-\`\`\`
-
-## Step-by-Step Deployment
-
-### Step 1: Deploy Infrastructure with CloudFormation
-
+1. Push your code to GitHub:
 \`\`\`bash
-# Navigate to infrastructure folder
-cd infrastructure
-
-# Create the CloudFormation stack
-aws cloudformation create-stack \
-  --stack-name campaign-manager-pro-dev \
-  --template-body file://cloudformation-template.yaml \
-  --parameters ParameterKey=EnvironmentName,ParameterValue=dev \
-               ParameterKey=ProjectName,ParameterValue=campaign-manager-pro \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
-
-# Wait for stack creation (takes 5-10 minutes)
-aws cloudformation wait stack-create-complete \
-  --stack-name campaign-manager-pro-dev \
-  --region us-east-1
-
-# Get the outputs
-aws cloudformation describe-stacks \
-  --stack-name campaign-manager-pro-dev \
-  --region us-east-1 \
-  --query 'Stacks[0].Outputs'
-\`\`\`
-
-Save the outputs (API URL, bucket names, etc.) - you'll need them later.
-
-### Step 2: Initialize DynamoDB Table
-
-\`\`\`bash
-# Navigate to scripts folder
-cd scripts
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Create the table structure (if not using CloudFormation's auto-creation)
-python create_table_dynamodb.py
-
-# Optional: Seed with sample data
-python seed_sample_data.py
-\`\`\`
-
-### Step 3: Deploy Lambda Functions
-
-\`\`\`bash
-# Still in scripts folder
-cd scripts
-
-# Create deployment package
-pip install -r requirements.txt -t ./package
-cp lambda_functions.py ./package/
-cd package
-zip -r ../lambda-deployment.zip .
-cd ..
-
-# Deploy to each Lambda function
-aws lambda update-function-code \
-  --function-name campaign-manager-pro-create-dev \
-  --zip-file fileb://lambda-deployment.zip \
-  --region us-east-1
-
-aws lambda update-function-code \
-  --function-name campaign-manager-pro-list-dev \
-  --zip-file fileb://lambda-deployment.zip \
-  --region us-east-1
-
-aws lambda update-function-code \
-  --function-name campaign-manager-pro-get-dev \
-  --zip-file fileb://lambda-deployment.zip \
-  --region us-east-1
-
-aws lambda update-function-code \
-  --function-name campaign-manager-pro-update-dev \
-  --zip-file fileb://lambda-deployment.zip \
-  --region us-east-1
-
-aws lambda update-function-code \
-  --function-name campaign-manager-pro-delete-dev \
-  --zip-file fileb://lambda-deployment.zip \
-  --region us-east-1
-
-aws lambda update-function-code \
-  --function-name campaign-manager-pro-upload-dev \
-  --zip-file fileb://lambda-deployment.zip \
-  --region us-east-1
-\`\`\`
-
-### Step 4: Configure Environment Variables
-
-\`\`\`bash
-# Set environment variables for each Lambda function
-FUNCTIONS=(
-  "campaign-manager-pro-create-dev"
-  "campaign-manager-pro-list-dev"
-  "campaign-manager-pro-get-dev"
-  "campaign-manager-pro-update-dev"
-  "campaign-manager-pro-delete-dev"
-  "campaign-manager-pro-upload-dev"
-)
-
-TABLE_NAME="campaign-manager-pro-campaigns-dev"
-BUCKET_NAME="campaign-manager-pro-assets-dev"
-
-for FUNC in "${FUNCTIONS[@]}"; do
-  aws lambda update-function-configuration \
-    --function-name $FUNC \
-    --environment "Variables={DYNAMODB_TABLE_NAME=$TABLE_NAME,S3_BUCKET_NAME=$BUCKET_NAME,ENVIRONMENT=dev}" \
-    --region us-east-1
-done
-\`\`\`
-
-### Step 5: Test API Endpoints
-
-\`\`\`bash
-# Get your API Gateway URL from CloudFormation outputs
-API_URL="https://xxxxx.execute-api.us-east-1.amazonaws.com/dev"
-
-# Test: List campaigns (should return empty array initially)
-curl -X GET "$API_URL/campaigns"
-
-# Test: Create a campaign
-curl -X POST "$API_URL/campaigns" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Nintendo_supermario_Wetransfer_Jan_Brazil",
-    "customer": "Africa - Brazil - Omnicom",
-    "brandAdvertiser": "Nintendo",
-    "campaignMotto": "SuperMario",
-    "organizationPublisher": "Wetransfer",
-    "market": "Brazil",
-    "salesPerson": "Carla Rodriguez",
-    "month": "Jan",
-    "investment": 10236.82,
-    "cost": 4677.40,
-    "hiddenCost": -1536.86,
-    "startDate": "2024-01-01",
-    "endDate": "2024-01-31",
-    "status": "Active",
-    "lines": []
-  }'
-
-# Test: Get all campaigns (should return the created campaign)
-curl -X GET "$API_URL/campaigns"
-\`\`\`
-
-### Step 6: Build and Deploy Frontend
-
-\`\`\`bash
-# Navigate to project root
-cd ..
-
-# Install dependencies
-npm install
-
-# Create .env.local with API URL
-echo "NEXT_PUBLIC_API_URL=$API_URL" > .env.local
-
-# Build Next.js application
-npm run build
-
-# Export static files
-npx next export -o out
-
-# Deploy to S3
-FRONTEND_BUCKET="campaign-manager-pro-frontend-dev"
-aws s3 sync out/ s3://$FRONTEND_BUCKET --delete
-
-# Invalidate CloudFront cache (if using CloudFront)
-DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-  --stack-name campaign-manager-pro-dev \
-  --region us-east-1 \
-  --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDomain`].OutputValue' \
-  --output text | cut -d'.' -f1)
-
-aws cloudfront create-invalidation \
-  --distribution-id $DISTRIBUTION_ID \
-  --paths "/*"
-\`\`\`
-
-### Step 7: Setup CI/CD with GitHub Actions
-
-\`\`\`bash
-# Add GitHub Secrets (in your GitHub repository settings)
-# Go to: Settings > Secrets and variables > Actions
-
-# Required secrets:
-# - AWS_ACCESS_KEY_ID
-# - AWS_SECRET_ACCESS_KEY
-# - API_GATEWAY_URL (from CloudFormation output)
-# - S3_BUCKET_NAME (frontend bucket)
-# - CLOUDFRONT_DISTRIBUTION_ID (from CloudFormation output)
-# - CLOUDFRONT_DOMAIN (from CloudFormation output)
-
-# Commit and push to trigger deployment
+git init
 git add .
-git commit -m "Deploy Campaign Manager Pro"
-git push origin main
+git commit -m "Initial commit"
+git remote add origin https://github.com/yourusername/campaign-manager-pro.git
+git push -u origin main
 \`\`\`
 
-## Step 8: Verify Deployment
+2. Go to [vercel.com](https://vercel.com) and sign in with GitHub
 
-1. **Test Frontend**: Visit your CloudFront URL
-2. **Test API**: Use the API documentation at `/openapi.yaml`
-3. **Create a Campaign**: Use the UI to create a test campaign
-4. **Upload a File**: Test file upload functionality
-5. **Check DynamoDB**: Verify data in AWS Console
+3. Click "New Project" and import your repository
 
-## Environment Variables Reference
+4. Configure:
+   - Framework Preset: Next.js
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
 
-### Lambda Functions
-- `DYNAMODB_TABLE_NAME` - DynamoDB table name
-- `S3_BUCKET_NAME` - S3 bucket for assets
-- `ENVIRONMENT` - Environment name (dev/staging/prod)
+5. Click "Deploy"
 
-### Frontend (Next.js)
-- `NEXT_PUBLIC_API_URL` - API Gateway endpoint URL
+Your app will be live at `https://your-project.vercel.app`
 
-## Cost Estimation (AWS)
+## Deploy to Netlify
 
-Based on moderate usage (1000 requests/day):
+1. Build your project:
+\`\`\`bash
+npm run build
+\`\`\`
 
-- **API Gateway**: ~$3.50/month
-- **Lambda**: ~$5.00/month (with free tier)
-- **DynamoDB**: ~$2.50/month (with free tier)
-- **S3**: ~$1.00/month
-- **CloudFront**: ~$5.00/month
-- **Total**: ~$17/month
+2. Install Netlify CLI:
+\`\`\`bash
+npm install -g netlify-cli
+\`\`\`
+
+3. Deploy:
+\`\`\`bash
+netlify deploy --prod
+\`\`\`
+
+Or drag and drop the `out` folder to [netlify.com/drop](https://netlify.com/drop)
+
+## Deploy to GitHub Pages
+
+1. Update `next.config.mjs`:
+\`\`\`javascript
+const nextConfig = {
+  output: 'export',
+  basePath: '/campaign-manager-pro',
+  images: {
+    unoptimized: true,
+  },
+}
+\`\`\`
+
+2. Build and export:
+\`\`\`bash
+npm run build
+\`\`\`
+
+3. Push the `out` folder to `gh-pages` branch
+
+4. Enable GitHub Pages in repository settings
+
+## Environment Variables
+
+The application works without environment variables for development. For production with a database, add:
+
+\`\`\`
+DATABASE_URL=your_database_connection_string
+\`\`\`
+
+### Adding Environment Variables in Vercel
+
+1. Go to your project in Vercel
+2. Settings → Environment Variables
+3. Add your variables
+4. Redeploy
+
+### Adding Environment Variables in Netlify
+
+1. Go to Site Settings → Environment Variables
+2. Add your variables
+3. Trigger a new deploy
+
+## Database Options (Optional)
+
+The app uses in-memory storage by default. To add persistence:
+
+### Vercel Postgres
+
+1. Go to your Vercel project
+2. Storage → Create Database → Postgres
+3. Copy the connection string
+4. Add as `DATABASE_URL` environment variable
+5. Update `lib/db.ts` to use the database
+
+### Supabase
+
+1. Create account at [supabase.com](https://supabase.com)
+2. Create new project
+3. Get connection string from Settings
+4. Add as `DATABASE_URL` environment variable
+5. Update `lib/db.ts` to use Supabase client
+
+### PlanetScale
+
+1. Create account at [planetscale.com](https://planetscale.com)
+2. Create database
+3. Get connection string
+4. Add as `DATABASE_URL` environment variable
+5. Update `lib/db.ts` to use MySQL client
+
+## Custom Domain
+
+### Vercel
+1. Go to Project Settings → Domains
+2. Add your custom domain
+3. Update DNS records as instructed
+4. SSL certificate is automatic
+
+### Netlify
+1. Go to Domain Settings
+2. Add custom domain
+3. Update DNS records
+4. SSL certificate is automatic
+
+## Performance Tips
+
+1. Enable compression in hosting platform
+2. Use CDN (automatic with Vercel/Netlify)
+3. Optimize images before uploading
+4. Enable caching headers
+5. Monitor performance with Vercel Analytics
 
 ## Troubleshooting
 
-### Lambda Functions Not Working
+### Build fails
+- Check Node.js version (18+)
+- Delete `node_modules` and `package-lock.json`
+- Run `npm install` again
+- Check for TypeScript errors
 
-\`\`\`bash
-# Check Lambda logs
-aws logs tail /aws/lambda/campaign-manager-pro-create-dev --follow
+### App not loading
+- Check browser console for errors
+- Verify environment variables
+- Check API routes are working
 
-# Test Lambda directly
-aws lambda invoke \
-  --function-name campaign-manager-pro-list-dev \
-  --region us-east-1 \
-  response.json
+### Deployment timeout
+- Increase build timeout in platform settings
+- Optimize build process
+- Check for infinite loops
 
-cat response.json
-\`\`\`
+## Cost
 
-### API Gateway 403 Errors
+All recommended platforms have generous free tiers:
 
-- Check CORS configuration in API Gateway
-- Verify Lambda permissions
-- Check CloudWatch logs
+- **Vercel**: Free for personal projects
+- **Netlify**: Free for personal projects  
+- **GitHub Pages**: Free for public repositories
 
-### DynamoDB Access Denied
+## Security
 
-- Verify IAM role has correct permissions
-- Check table name in environment variables
+For production:
+1. Add authentication
+2. Validate all inputs
+3. Use HTTPS only
+4. Enable CORS properly
+5. Add rate limiting
+6. Regular security updates
 
-### Frontend Not Loading
+## Monitoring
 
-- Check S3 bucket policy (must allow public read)
-- Verify CloudFront distribution is deployed
-- Check API URL in environment variables
-
-## Monitoring and Maintenance
-
-### CloudWatch Dashboards
-
-\`\`\`bash
-# View Lambda metrics
-aws cloudwatch get-metric-statistics \
-  --namespace AWS/Lambda \
-  --metric-name Invocations \
-  --dimensions Name=FunctionName,Value=campaign-manager-pro-create-dev \
-  --start-time 2024-01-01T00:00:00Z \
-  --end-time 2024-01-31T23:59:59Z \
-  --period 3600 \
-  --statistics Sum
-\`\`\`
-
-### Enable X-Ray Tracing
-
-\`\`\`bash
-# Enable X-Ray for Lambda functions
-aws lambda update-function-configuration \
-  --function-name campaign-manager-pro-create-dev \
-  --tracing-config Mode=Active
-\`\`\`
-
-## Security Best Practices
-
-1. **API Authentication**: Add API Key or JWT authentication
-2. **S3 Bucket Security**: Enable versioning and encryption
-3. **DynamoDB**: Enable point-in-time recovery
-4. **CloudFront**: Use HTTPS only
-5. **IAM**: Use least privilege principle
-6. **Secrets**: Use AWS Secrets Manager for sensitive data
-
-## Cleanup (Delete All Resources)
-
-\`\`\`bash
-# Delete CloudFormation stack (deletes most resources)
-aws cloudformation delete-stack \
-  --stack-name campaign-manager-pro-dev \
-  --region us-east-1
-
-# Wait for deletion
-aws cloudformation wait stack-delete-complete \
-  --stack-name campaign-manager-pro-dev \
-  --region us-east-1
-
-# Empty and delete S3 buckets (if not auto-deleted)
-aws s3 rm s3://campaign-manager-pro-frontend-dev --recursive
-aws s3 rb s3://campaign-manager-pro-frontend-dev
-
-aws s3 rm s3://campaign-manager-pro-assets-dev --recursive
-aws s3 rb s3://campaign-manager-pro-assets-dev
-\`\`\`
-
-## Next Steps
-
-1. Add authentication (AWS Cognito or Auth0)
-2. Implement rate limiting
-3. Add monitoring and alerting
-4. Setup staging and production environments
-5. Implement automated testing in CI/CD
-6. Add caching layer (ElastiCache)
-7. Implement backup strategy
+Free monitoring options:
+- Vercel Analytics (built-in)
+- Google Analytics
+- Plausible Analytics
+- Sentry for error tracking
 
 ## Support
 
-For issues or questions:
-- Check CloudWatch Logs
-- Review API documentation in `openapi.yaml`
-- Check GitHub Issues
+For issues:
+1. Check deployment logs
+2. Review documentation
+3. Open GitHub issue
+4. Contact platform support
+
+## Next Steps
+
+After deployment:
+1. Test all features
+2. Add custom domain
+3. Set up monitoring
+4. Configure backups (if using database)
+5. Share with team or portfolio

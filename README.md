@@ -1,289 +1,59 @@
 # Campaign Manager Pro
 
-Aplicación Full Stack para gestionar campañas publicitarias. Desarrollada con Next.js y diseñada para desplegar en AWS con arquitectura serverless.
+Full-stack campaign management application built with Next.js and React. Perfect for managing advertising campaigns with automatic gross margin calculations.
 
-## 🚀 Características
+## Features
 
-- ✅ API RESTful completa con operaciones CRUD
-- ✅ Cálculo automático de márgenes (Budget / Units)
-- ✅ Interfaz moderna y responsive con React
-- ✅ Validación de datos en frontend y backend
-- ✅ Gestión de estados (Activa, Pausada, Completada)
-- ✅ Diseño profesional con Tailwind CSS
-- ✅ Arquitectura lista para AWS Lambda + API Gateway
+- Complete CRUD operations for campaigns
+- Automatic Gross Margin calculation (Investment - Cost - Hidden Cost)
+- Real-time margin percentage display
+- Campaign lines with unit tracking
+- Modern, responsive UI with dark mode support
+- Form validation and error handling
+- Professional business-focused design
 
-## 📋 Requisitos de la Prueba Técnica
+## Tech Stack
 
-### Backend (Completado ✓)
+**Frontend:**
+- Next.js 16 with React 19.2
+- TypeScript for type safety
+- Tailwind CSS v4 for styling
+- shadcn/ui components (Radix UI)
+- React Hook Form with Zod validation
 
-- [x] **API Gateway**: Endpoints REST configurados en `/api/campaigns`
-- [x] **AWS Lambda**: Lógica implementada en Python (ver `scripts/lambda_functions.py`)
-- [x] **DynamoDB/RDS**: Scripts SQL incluidos para ambas opciones
-- [x] **Cálculo de Margen**: `margin = budget / units` automático
-- [x] **Validaciones**: Datos de entrada validados
-- [x] **Manejo de Errores**: Códigos HTTP apropiados (200, 201, 400, 404, 500)
-- [x] **Documentación API**: Ver sección API Endpoints
+**Backend:**
+- Next.js API Routes
+- In-memory data storage (ready for database integration)
+- RESTful API design
 
-### Frontend (Completado ✓)
+## Getting Started
 
-- [x] **SPA con React**: Aplicación Next.js moderna
-- [x] **CRUD Completo**: Ver, Crear, Editar, Eliminar campañas
-- [x] **Validaciones**: Validación en tiempo real
-- [x] **Cálculo en Tiempo Real**: Margen se actualiza automáticamente
-- [x] **Performance**: Optimizado con React hooks y lazy loading
-- [x] **Diseño Profesional**: UI/UX moderna y responsive
+### Prerequisites
 
-## 📊 API Endpoints
+- Node.js 18 or higher
+- npm or yarn
 
-### Base URL: `/api/campaigns`
+### Installation
 
-| Método | Endpoint | Descripción | Códigos de Estado |
-|--------|----------|-------------|-------------------|
-| GET | `/campaigns` | Listar todas las campañas | 200, 500 |
-| GET | `/campaigns/{id}` | Obtener una campaña | 200, 404, 500 |
-| POST | `/campaigns` | Crear campaña | 201, 400, 500 |
-| PUT | `/campaigns/{id}` | Actualizar campaña | 200, 400, 404, 500 |
-| DELETE | `/campaigns/{id}` | Eliminar campaña | 200, 404, 500 |
-
-### Ejemplos de Uso
-
-#### Crear Campaña
+1. Clone the repository:
 \`\`\`bash
-POST /api/campaigns
-Content-Type: application/json
-
-{
-  "name": "Campaña Navidad 2025",
-  "client": "Retail Corp",
-  "platform": "Google Ads",
-  "budget": 100000,
-  "units": 20000,
-  "startDate": "2025-12-01",
-  "endDate": "2025-12-31",
-  "status": "active"
-}
+git clone https://github.com/yourusername/campaign-manager-pro.git
+cd campaign-manager-pro
 \`\`\`
 
-Respuesta (201):
-\`\`\`json
-{
-  "id": "1735689600000",
-  "name": "Campaña Navidad 2025",
-  "client": "Retail Corp",
-  "platform": "Google Ads",
-  "budget": 100000,
-  "units": 20000,
-  "margin": 5.0,
-  "startDate": "2025-12-01",
-  "endDate": "2025-12-31",
-  "status": "active",
-  "createdAt": "2025-01-01T00:00:00.000Z",
-  "updatedAt": "2025-01-01T00:00:00.000Z"
-}
-\`\`\`
-
-#### Listar Campañas
+2. Install dependencies:
 \`\`\`bash
-GET /api/campaigns
+npm install
 \`\`\`
 
-Respuesta (200):
-\`\`\`json
-[
-  {
-    "id": "1",
-    "name": "Campaña Verano 2025",
-    "client": "Tech Corp",
-    "platform": "Google Ads",
-    "budget": 50000,
-    "units": 10000,
-    "margin": 5.0,
-    "startDate": "2025-01-01",
-    "endDate": "2025-03-31",
-    "status": "active",
-    "createdAt": "2025-01-01T00:00:00.000Z",
-    "updatedAt": "2025-01-01T00:00:00.000Z"
-  }
-]
-\`\`\`
-
-## 🏗️ Arquitectura AWS
-
-### Diagrama de Arquitectura
-
-\`\`\`
-┌─────────────┐      ┌──────────────┐      ┌─────────────┐
-│  CloudFront │ ───► │  S3 Bucket   │      │ API Gateway │
-│   (CDN)     │      │  (Frontend)  │      │  (REST API) │
-└─────────────┘      └──────────────┘      └──────┬──────┘
-                                                   │
-                                                   ▼
-                                            ┌──────────────┐
-                                            │ Lambda       │
-                                            │ (Python 3.11)│
-                                            └──────┬───────┘
-                                                   │
-                              ┌────────────────────┴────────────────────┐
-                              ▼                                         ▼
-                       ┌─────────────┐                          ┌──────────┐
-                       │  DynamoDB   │      O BIEN              │   RDS    │
-                       │  (NoSQL)    │                          │  (SQL)   │
-                       └─────────────┘                          └──────────┘
-\`\`\`
-
-### Servicios AWS Utilizados
-
-1. **Amazon S3**: Almacenamiento del frontend estático
-2. **CloudFront**: CDN para distribución global
-3. **API Gateway**: Endpoints REST para la API
-4. **AWS Lambda**: Funciones serverless en Python
-5. **DynamoDB** o **RDS**: Base de datos (a elección)
-6. **IAM**: Gestión de permisos y roles
-
-## 🗄️ Base de Datos
-
-### Opción 1: DynamoDB (NoSQL)
-
-**Estructura de la Tabla:**
-- **Nombre**: `campaigns`
-- **Partition Key**: `id` (String)
-- **Billing Mode**: On-Demand
-
-**Crear tabla:**
+3. Run the development server:
 \`\`\`bash
-python scripts/create_table_dynamodb.py
-\`\`\`
-
-**Ventajas:**
-- ✅ Serverless y escalable automáticamente
-- ✅ Sin administración de infraestructura
-- ✅ Pago por uso
-- ✅ Integración nativa con Lambda
-
-### Opción 2: RDS PostgreSQL (SQL)
-
-**Crear tabla:**
-\`\`\`bash
-psql -h <RDS_ENDPOINT> -U postgres -d campaigns_db -f scripts/create_table_postgres.sql
-\`\`\`
-
-**Ventajas:**
-- ✅ Queries SQL complejas
-- ✅ Relaciones entre tablas
-- ✅ Transacciones ACID
-- ✅ Familiaridad con SQL
-
-## 🚀 Despliegue en AWS
-
-### Paso 1: Preparar el Backend (Lambda)
-
-1. **Crear función Lambda:**
-\`\`\`bash
-# Empaquetar el código
-cd scripts
-zip -r lambda_function.zip lambda_functions.py
-
-# Subir a Lambda vía AWS Console o CLI
-aws lambda create-function \
-  --function-name campaign-manager-api \
-  --runtime python3.11 \
-  --role arn:aws:iam::ACCOUNT_ID:role/lambda-execution-role \
-  --handler lambda_functions.lambda_handler \
-  --zip-file fileb://lambda_function.zip \
-  --environment Variables={DYNAMODB_TABLE_NAME=campaigns}
-\`\`\`
-
-2. **Configurar variables de entorno:**
-   - `DYNAMODB_TABLE_NAME`: `campaigns`
-
-3. **Configurar permisos IAM:**
-   - Acceso a DynamoDB (dynamodb:PutItem, GetItem, Scan, UpdateItem, DeleteItem)
-   - Logs de CloudWatch
-
-### Paso 2: Configurar API Gateway
-
-1. **Crear API REST:**
-   - Tipo: REST API
-   - Nombre: `campaign-manager-api`
-
-2. **Crear recursos y métodos:**
-
-\`\`\`
-/campaigns
-  ├── GET     → Lambda: lambda_handler
-  ├── POST    → Lambda: lambda_handler
-  └── /{id}
-      ├── GET    → Lambda: lambda_handler
-      ├── PUT    → Lambda: lambda_handler
-      └── DELETE → Lambda: lambda_handler
-\`\`\`
-
-3. **Habilitar CORS:**
-\`\`\`json
-{
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type"
-}
-\`\`\`
-
-4. **Desplegar API:**
-   - Crear stage: `prod`
-   - Obtener URL: `https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod`
-
-### Paso 3: Desplegar Frontend
-
-1. **Configurar variable de entorno:**
-\`\`\`bash
-# .env.local
-NEXT_PUBLIC_API_URL=https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod
-\`\`\`
-
-2. **Build y subir a S3:**
-\`\`\`bash
-npm run build
-aws s3 sync out/ s3://campaign-manager-frontend/
-\`\`\`
-
-3. **Configurar S3 para hosting:**
-   - Habilitar "Static website hosting"
-   - Bucket policy público para lectura
-
-4. **Configurar CloudFront:**
-   - Origen: S3 bucket
-   - Default root object: `index.html`
-   - Error pages: Redirigir 404 a `/index.html` (SPA)
-
-### Paso 4: Base de Datos
-
-**Para DynamoDB:**
-\`\`\`bash
-python scripts/create_table_dynamodb.py
-\`\`\`
-
-**Para RDS:**
-\`\`\`bash
-psql -h <RDS_ENDPOINT> -U postgres -d campaigns_db -f scripts/create_table_postgres.sql
-\`\`\`
-
-## 🧪 Testing Local
-
-### Backend
-\`\`\`bash
-# Iniciar servidor de desarrollo
 npm run dev
-
-# Probar endpoints
-curl http://localhost:3000/api/campaigns
 \`\`\`
 
-### Frontend
-\`\`\`bash
-# Abrir en navegador
-open http://localhost:3000
-\`\`\`
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## 📦 Estructura del Proyecto
+## Project Structure
 
 \`\`\`
 campaign-manager-pro/
@@ -293,61 +63,138 @@ campaign-manager-pro/
 │   │       ├── route.ts           # GET, POST /campaigns
 │   │       └── [id]/
 │   │           └── route.ts       # GET, PUT, DELETE /campaigns/{id}
-│   ├── layout.tsx                 # Layout principal
-│   ├── page.tsx                   # Página principal
-│   └── globals.css                # Estilos globales
+│   ├── layout.tsx                 # Root layout
+│   ├── page.tsx                   # Main page
+│   └── globals.css                # Global styles
 ├── components/
-│   ├── campaign-form.tsx          # Formulario de campaña
-│   ├── campaign-table.tsx         # Tabla de campañas
-│   └── campaign-details.tsx       # Detalles de campaña
+│   ├── campaign-form.tsx          # Campaign form
+│   ├── campaign-table.tsx         # Campaign list
+│   └── campaign-details.tsx       # Campaign details view
 ├── lib/
-│   ├── types.ts                   # Tipos TypeScript
-│   └── db.ts                      # Lógica de base de datos
-├── scripts/
-│   ├── lambda_functions.py        # Funciones Lambda (Python)
-│   ├── create_table_dynamodb.py   # Script para crear tabla DynamoDB
-│   └── create_table_postgres.sql  # Script para crear tabla PostgreSQL
-└── README.md                      # Esta documentación
+│   ├── types.ts                   # TypeScript types
+│   └── db.ts                      # Data layer
+└── README.md
 \`\`\`
 
-## 🔒 Seguridad
+## API Endpoints
 
-- ✅ Validación de datos en backend
-- ✅ Sanitización de inputs
-- ✅ CORS configurado correctamente
-- ✅ Variables de entorno para credenciales
-- ✅ IAM roles con permisos mínimos necesarios
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/campaigns` | List all campaigns |
+| GET | `/api/campaigns/{id}` | Get campaign by ID |
+| POST | `/api/campaigns` | Create new campaign |
+| PUT | `/api/campaigns/{id}` | Update campaign |
+| DELETE | `/api/campaigns/{id}` | Delete campaign |
 
-## 📈 Extras Implementados
+## Data Model
 
-- [x] Cálculo automático de margen en tiempo real
-- [x] Estados de campaña (Activa, Pausada, Completada)
-- [x] Filtros visuales con badges de estado
-- [x] Vista de detalles completa
-- [x] Diseño responsive y profesional
-- [x] Manejo de errores robusto
-- [x] Scripts de inicialización de DB
+\`\`\`typescript
+Campaign {
+  id: string
+  name: string
+  customer: string
+  brandAdvertiser: string
+  campaignMotto: string
+  organizationPublisher: string
+  market: string
+  salesPerson: string
+  month: string
+  investment: number
+  cost: number
+  hiddenCost: number
+  grossMargin: number (calculated)
+  grossMarginPercentage: number (calculated)
+  lines: CampaignLine[]
+  startDate: string
+  endDate: string
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+\`\`\`
 
-## 🎯 Próximos Pasos (Opcionales)
+## Gross Margin Calculation
 
-Para mejorar aún más la aplicación:
+The application automatically calculates:
+- **Gross Margin**: `Investment - Cost - Hidden Cost`
+- **Gross Margin %**: `(Gross Margin / Investment) × 100`
 
-1. **Subida de archivos a S3**: Logos de campañas, PDFs
-2. **Autenticación**: Cognito para gestión de usuarios
-3. **Múltiples Lambdas**: Separar funciones por endpoint
-4. **Lambda Layers**: Compartir dependencias comunes
-5. **Step Functions**: Workflows complejos
-6. **CloudWatch**: Dashboards y alertas
-7. **Tests**: Jest + Testing Library
+## Deployment
 
-## 📝 Documentación API (OpenAPI)
+### Deploy to Vercel (Recommended)
 
-La aplicación está lista para generar documentación Swagger/OpenAPI. Los endpoints siguen el estándar REST y retornan respuestas JSON consistentes.
+1. Push your code to GitHub
+2. Visit [vercel.com](https://vercel.com)
+3. Import your repository
+4. Deploy with one click
 
-## 🤝 Contacto
+### Deploy to Netlify
 
-Para cualquier pregunta sobre la implementación, no dudes en contactarme.
+1. Build the project:
+\`\`\`bash
+npm run build
+\`\`\`
 
----
+2. Deploy the `out` folder to Netlify
 
-**Desarrollado para la prueba técnica de Full Stack Developer - US Media**
+### Environment Variables
+
+For production with a real database, add:
+\`\`\`
+DATABASE_URL=your_database_url
+\`\`\`
+
+## Database Integration
+
+The application currently uses in-memory storage. To integrate a database:
+
+1. Choose your database (PostgreSQL, MySQL, MongoDB, etc.)
+2. Update `lib/db.ts` with database client
+3. Add environment variables
+4. Deploy
+
+Popular options:
+- **Vercel Postgres** - Integrated with Vercel
+- **Supabase** - PostgreSQL with authentication
+- **PlanetScale** - MySQL serverless
+- **MongoDB Atlas** - NoSQL database
+
+## Development
+
+### Build for production
+\`\`\`bash
+npm run build
+\`\`\`
+
+### Run production build locally
+\`\`\`bash
+npm start
+\`\`\`
+
+### Type checking
+\`\`\`bash
+npm run type-check
+\`\`\`
+
+## Future Enhancements
+
+- User authentication
+- File upload for campaign assets
+- Advanced filtering and search
+- Export to CSV/Excel
+- Real-time collaboration
+- Analytics dashboard
+- Multi-currency support
+- Automated reports
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License - feel free to use this project for your portfolio or commercial purposes.
+
+## Contact
+
+For questions or support, please open an issue on GitHub.
