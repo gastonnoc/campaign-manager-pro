@@ -53,28 +53,6 @@ npm run dev
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Project Structure
-
-\`\`\`
-campaign-manager-pro/
-├── app/
-│   ├── api/
-│   │   └── campaigns/
-│   │       ├── route.ts           # GET, POST /campaigns
-│   │       └── [id]/
-│   │           └── route.ts       # GET, PUT, DELETE /campaigns/{id}
-│   ├── layout.tsx                 # Root layout
-│   ├── page.tsx                   # Main page
-│   └── globals.css                # Global styles
-├── components/
-│   ├── campaign-form.tsx          # Campaign form
-│   ├── campaign-table.tsx         # Campaign list
-│   └── campaign-details.tsx       # Campaign details view
-├── lib/
-│   ├── types.ts                   # TypeScript types
-│   └── db.ts                      # Data layer
-└── README.md
-\`\`\`
 
 ## API Endpoints
 
@@ -119,45 +97,9 @@ The application automatically calculates:
 - **Gross Margin**: `Investment - Cost - Hidden Cost`
 - **Gross Margin %**: `(Gross Margin / Investment) × 100`
 
-## Deployment
-
-### Deploy to Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Visit [vercel.com](https://vercel.com)
-3. Import your repository
-4. Deploy with one click
-
-### Deploy to Netlify
-
-1. Build the project:
-\`\`\`bash
-npm run build
-\`\`\`
-
-2. Deploy the `out` folder to Netlify
-
-### Environment Variables
-
-For production with a real database, add:
-\`\`\`
-DATABASE_URL=your_database_url
-\`\`\`
-
 ## Database Integration
 
-The application currently uses in-memory storage. To integrate a database:
-
-1. Choose your database (PostgreSQL, MySQL, MongoDB, etc.)
-2. Update `lib/db.ts` with database client
-3. Add environment variables
-4. Deploy
-
-Popular options:
-- **Vercel Postgres** - Integrated with Vercel
-- **Supabase** - PostgreSQL with authentication
-- **PlanetScale** - MySQL serverless
-- **MongoDB Atlas** - NoSQL database
+The application currently uses in-memory storage. We should integrate a database.
 
 ## Development
 
@@ -187,14 +129,3 @@ npm run type-check
 - Multi-currency support
 - Automated reports
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License - feel free to use this project for your portfolio or commercial purposes.
-
-## Contact
-
-For questions or support, please open an issue on GitHub.

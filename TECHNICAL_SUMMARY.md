@@ -141,13 +141,6 @@ CampaignLine {
 - Efficient re-renders
 - Memoization where needed
 
-### Metrics
-- Initial load: < 2s
-- Time to Interactive: < 3s
-- Bundle size: ~150KB (gzipped)
-
-## Security
-
 ### Current Measures
 - Input validation (client and server)
 - Type safety
@@ -161,20 +154,9 @@ CampaignLine {
 - HTTPS only
 - Security headers
 
-## Testing Strategy
-
-Ready for testing with:
-- Jest for unit tests
-- React Testing Library for components
-- Playwright for E2E tests
-
 ## Deployment
 
-Optimized for:
-- Vercel (recommended)
-- Netlify
-- Any Node.js hosting
-- Static export option available
+- Vercel
 
 ## Scalability Path
 
@@ -193,39 +175,12 @@ Ready to integrate with:
 - **NoSQL**: MongoDB, DynamoDB
 - **Serverless**: Vercel Postgres, Supabase, PlanetScale
 
-Update `lib/db.ts` to switch storage backend.
-
-## Future Enhancements
-
-- Multi-user support with authentication
-- Role-based permissions
-- Advanced filtering and search
-- Export to CSV/Excel
-- Import campaigns from files
-- Analytics dashboard
-- Email notifications
-- API key authentication
-- Webhook support
-
-## Development
-
 ### Commands
 \`\`\`bash
 npm run dev        # Development server
 npm run build      # Production build
 npm run start      # Run production build
 npm run lint       # Lint code
-\`\`\`
-
-### Project Structure
-\`\`\`
-app/              # Next.js app directory
-  api/           # API routes
-  page.tsx       # Main page
-  layout.tsx     # Root layout
-components/       # React components
-lib/             # Utilities and types
-public/          # Static assets
 \`\`\`
 
 ## Performance Benchmarks
